@@ -55,10 +55,11 @@ The following metrics were measured while processing a 1GB CSV file containing o
 
 | Metric | Result |
 |--------|--------|
-| **Processing Time** | **38.69 seconds** |
-| **Peak Memory Usage** | **11.23 MB** |
+| **Processing Time** | **6.36 seconds** (Multiprocessing) |
+| **Peak Memory (Main Process)** | **0.60 MB** |
+| **Throughput** | **~4.2 million rows/sec** |
 
-*Measurements taken on a standard machine using the optimized Pandas chunking implementation.*
+*Measurements taken on an 8-core system processing a 1GB CSV file (26.8M rows). Multiprocessing significantly reduced processing time from ~38s to ~6s.*
 
 ---
 *Developed as part of the Software Engineer Challenge.*
