@@ -15,9 +15,46 @@ import os
 import sys
 import time
 import tracemalloc
+import threading
+import psutil
 
 from core.processor import process_csv
 from core.writer import write_top10_ctr, write_top10_cpa
+
+
+class MemoryMonitor(threading.Thread):
+    """
+    Monitor memory usage of the current process and all its children.
+    This is necessary because ProcessPoolExecutor spawns separate processes
+    whose memory is not tracked by tracemalloc in the main process.
+    """
+    def __init__(self, interval=0.1):
+        super().__init__(daemon=True)
+        self.interval = interval
+        self.peak_memory = 0
+        self.running = False
+        self.root_process = psutil.Process(os.getpid())
+
+    def run(self):
+        self.running = True
+        while self.running:
+            try:
+                # Sum RSS of main process and all children
+                total_mem = self.root_process.memory_info().rss
+                for child in self.root_process.children(recursive=True):
+                    try:
+                        total_mem += child.memory_info().rss
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+                
+                if total_mem > self.peak_memory:
+                    self.peak_memory = total_mem
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+            time.sleep(self.interval)
+
+    def stop(self):
+        self.running = False
 
 
 def setup_logging():
@@ -82,6 +119,9 @@ def main():
 
     # Start memory tracking
     tracemalloc.start()
+    mem_monitor = MemoryMonitor()
+    mem_monitor.start()
+    
     start_time = time.time()
 
     # Step 1: Process CSV
@@ -115,12 +155,18 @@ def main():
 
     # --- Report ---
     elapsed = time.time() - start_time
-    current_mem, peak_mem = tracemalloc.get_traced_memory()
+    mem_monitor.stop()
+    mem_monitor.join()
+    
+    current_mem, peak_mem_traced = tracemalloc.get_traced_memory()
     tracemalloc.stop()
+    
+    peak_mem_rss = mem_monitor.peak_memory
 
     logger.info("-" * 60)
     logger.info(f"Processing time : {elapsed:.2f} seconds")
-    logger.info(f"Peak memory     : {peak_mem / (1024 * 1024):.2f} MB")
+    logger.info(f"Peak memory (RSS): {peak_mem_rss / (1024 * 1024):.2f} MB")
+    logger.info(f"Python-only peak: {peak_mem_traced / (1024 * 1024):.2f} MB")
     logger.info("=" * 60)
     logger.info("Done! Results saved to:")
     logger.info(f"  - {os.path.join(output_dir, 'top10_ctr.csv')}")

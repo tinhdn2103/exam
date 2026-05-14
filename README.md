@@ -43,11 +43,11 @@ python aggregator.py --input ad_data.csv/ad_data.csv --output results/
 
 ## 📚 Libraries Used
 
-- **Pandas (>= 2.0.0)**: Used for high-performance, vectorized data manipulation and CSV chunk processing.
-- **NumPy (>= 1.24.0)**: Used for efficient numerical operations and handling missing data (NaN).
+- **Psutil**: Used to monitor accurate peak memory usage across multiple processes.
 - **Pytest**: Framework used for unit testing and verifying processing logic.
 - **Argparse**: Built-in module for handling command-line arguments.
-- **Tracemalloc**: Built-in module used to monitor and report peak memory usage.
+- **Tracemalloc**: Built-in module used to monitor Python-specific memory allocations.
+- **CSV (Built-in)**: Used for high-performance, memory-efficient streaming data processing.
 
 ## ⚡ Performance Results (1GB File)
 
@@ -55,11 +55,12 @@ The following metrics were measured while processing a 1GB CSV file containing o
 
 | Metric | Result |
 |--------|--------|
-| **Processing Time** | **6.36 seconds** (Multiprocessing) |
-| **Peak Memory (Main Process)** | **0.60 MB** |
-| **Throughput** | **~4.2 million rows/sec** |
+| **Processing Time** | **~12.84 seconds** (Multiprocessing) |
+| **Peak Memory (Total RSS)** | **~195 MB** |
+| **Python Overhead** | **0.40 MB** |
+| **Throughput** | **~2.1 million rows/sec** |
 
-*Measurements taken on an 8-core system processing a 1GB CSV file (26.8M rows). Multiprocessing significantly reduced processing time from ~38s to ~6s.*
+*Measurements taken on an 8-core system processing a 1GB CSV file. The application uses a pure streaming approach to keep memory usage minimal while utilizing multiple processes for speed.*
 
 ---
 *Developed as part of the Software Engineer Challenge.*
